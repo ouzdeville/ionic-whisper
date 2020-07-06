@@ -1,0 +1,8 @@
+{
+  "name": "ionic-whisper",
+  "integrations": {
+    "capacitor": {},
+    "cordova": {}
+  },
+  "type": "angular"
+}
