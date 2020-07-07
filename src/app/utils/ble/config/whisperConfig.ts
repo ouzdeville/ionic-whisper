@@ -27,9 +27,10 @@ export class WhisperConfig {
     pingMaxElapsedTimeMillis= 5 * 60 * 1000; // 5 minutes
 
     /* GATT services and characteristics */
-    whisperServiceUUID= "1e91022a-4c2a-434d-be23-d39eb6cd4952";
-    whisperV1CharacteristicUUID= "4d5c8851-6210-425f-8ab9-df679779a3b4"; // EBID
-    whisperV3CharacteristicUUID= "645ed98f-d6b0-46b5-a1a5-ce32bbf09232"; // PET
+    //whisperServiceUUID= "1e91022a-4c2a-434d-be23-d39eb6cd4952";
+    //whisperV1CharacteristicUUID= "4d5c8851-6210-425f-8ab9-df679779a3b4"; // EBID
+    whisperV3CharacteristicUUID= "645ED98F-D6B0-46B5-A1A5-CE32BBF09232"; // PET
+    
 
 
     /*Advertising params*/
@@ -59,7 +60,7 @@ export class WhisperConfig {
       };
 
       serviceParam = {
-        service: this.whisperServiceUUID,
+        service: this.whisperV3CharacteristicUUID,
         characteristics: [
           {
             uuid: "ABCD",
