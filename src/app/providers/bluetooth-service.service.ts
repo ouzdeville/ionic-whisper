@@ -33,6 +33,7 @@ export class BluetoothServiceService {
   advParams: any = {};
   S_pair: any = [];
   S_connect: any = [];
+  scanList: string[] = [];
   cryptoTools = new CryptoTools();
   whisperConfig: WhisperConfig = new WhisperConfig();
 
@@ -73,12 +74,12 @@ export class BluetoothServiceService {
       }
     });
     //this.backgroundMode.on('enable').subscribe(() => {
-    console.log('(background) start scan')
+    //console.log('(background) start scan')
     // Callback for internal calls
     this.scan();
     //});
 
-    this.backgroundMode.enable();
+    //this.backgroundMode.enable();
 
   }
   // /**
@@ -90,7 +91,7 @@ export class BluetoothServiceService {
   //    */
   async updateAdvertising(priority, success, error, params) {
     const encodedPriority = this.bluetoothle.bytesToEncodedString(priority);
-    console.log("priority: " + encodedPriority);
+
     await this.bluetoothle.isAdvertising().then(result => {
       console.log('isAdvertising:' + JSON.stringify(result));
       let possibleresult = { "isAdvertising": true };
@@ -124,6 +125,9 @@ export class BluetoothServiceService {
     // Doing stuff here
 
     console.log('scanning');
+    this.S_connect = [];
+    this.S_pair = [];
+    this.scanList = [];
 
     this.bluetoothle.isEnabled()
       .then(() => {
@@ -131,6 +135,7 @@ export class BluetoothServiceService {
         //- generate a priority , update this.priority
         this.priority = this.cryptoTools.generatePriority();
         this.my_priority_int = (this.priority[0] << 8) + this.priority[1];
+        console.log("My priority: " + this.my_priority_int);
         /*if (this.debug) {
           this.priority[1] = 0xFE;// just for debugging
         }*/
@@ -187,6 +192,7 @@ export class BluetoothServiceService {
 
     setTimeout(() => {
       this.bluetoothle.isScanning().then(isScanning => {
+        console.log("is scaning:" + JSON.stringify(isScanning));
         if (isScanning.isScanning) {
           this.bluetoothle.stopScan().then(stopResult => {
             console.log('#Stop Scan' + JSON.stringify(stopResult));
@@ -211,23 +217,49 @@ export class BluetoothServiceService {
                 this.bluetoothle.discover({
                   "address": device.address,
                   "clearCache": true
+                }).then(discoverResult => {
+                  if (this.debug)
+                    console.log('discoverResult:' + JSON.stringify(discoverResult));
+
+                    discoverResult.services.forEach((service) => {
+
+                      if (service.uuid === this.whisperConfig.whisperV3CharacteristicUUID) {
+              
+                        const cuuid = service.characteristics[0].uuid;
+              
+                          //send data
+                          this.bluetoothle.write({
+                            "value": this.keyPair.pubKey,
+                            "service": this.whisperConfig.whisperV3CharacteristicUUID,
+                            "characteristic": cuuid,
+                            "type": "withResponse",
+                            "address": device.address
+                          }).then(result => {
+                            console.log('Write:', result.status);
+                            console.log('Address:', device.address);
+                            console.log('His key from write:', result.value);
+                            //diffie-hellman set data into ping, pear or connect
+                            this.process_diffie_hellman(this.keyPair, result.value);
+                          });
+                          
+                        }
+              
+                    });
+
+
+
+
+
+
+
+
+
+                  
                 });
-                this.bluetoothle.write({
-                  "value": this.keyPair.pubKey,
-                  "service": this.whisperConfig.whisperV3CharacteristicUUID,
-                  "characteristic": "ABCD",
-                  "type": "withResponse",
-                  "address": device.address
-                }).then(result => {
-                  console.log('Write:', result.status);
-                  console.log('Address:', device.address);
-                  console.log('His key from write:', result.value);
-                  //diffie-hellman set data into ping, pear or connect
-                  this.process_diffie_hellman(this.keyPair, result.value);
-                });
+
               });
             });
-            this.S_connect = [];
+
           });
         }
       });
@@ -282,8 +314,9 @@ export class BluetoothServiceService {
     };
 
     //keyPair = this.cryptoTools.generateKeyPair();
-    console.log("keyPair to be fixed")
+
     if (this.debug) {
+      console.log("Debug key Pair");
       keyPair = {
         pubKey: "Q2UyDI59OMY+OMyIZ29xBWugpsBs5a8tyTTlifLHjTE=",
         prvKey: "cMp/vTtLBZS6c6wIQgVgx1aTD8kzARdCI8VRDOSBxHI="
@@ -312,6 +345,8 @@ export class BluetoothServiceService {
   //  * status => mtuChanged = MTU has changed for device
   //  */
   initializeResult(result) {
+    console.log("#BLE---initializeResult");
+    console.log(JSON.stringify(result));
     this.currentPubKey = this.getLastKeyPair();
     if (result.status === "enabled") {
       console.log('#BLE-Status:', result.status + "-- Adding service")
@@ -428,8 +463,9 @@ export class BluetoothServiceService {
      */
 
     console.log("scanResult: New Device:" + JSON.stringify(device))
-    if (device.status === "scanResult") {
-
+    console.log("this.scanList.includes " + this.scanList.includes(device.address));
+    if (device.status === "scanResult" && !this.scanList.includes(device.address)) {
+      this.scanList.push(device.address);
       let manufacturerData: any;
 
       if (typeof device.advertisement !== 'string') {
@@ -441,7 +477,7 @@ export class BluetoothServiceService {
 
       console.log("manufacturerData: New Device:" + manufacturerData);
       var his_priority = (manufacturerData[7] << 8) + manufacturerData[8];
-      console.log("His Prio: " + his_priority);
+      console.log("His Prio: " + his_priority + "--- My Prio:" + this.my_priority_int);
       let his_value = {
         "rssi": device.rssi,
         "name": device.name,
@@ -475,6 +511,8 @@ export class BluetoothServiceService {
 
 
   }
+
+
 
   getLastConnect(address: string) {
     return -1;
