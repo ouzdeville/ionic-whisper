@@ -345,6 +345,8 @@ export class BluetoothServiceService {
   //  * status => mtuChanged = MTU has changed for device
   //  */
   initializeResult(result) {
+    console.log("#BLE---initializeResult");
+    console.log(JSON.stringify(result));
     this.currentPubKey = this.getLastKeyPair();
     if (result.status === "enabled") {
       console.log('#BLE-Status:', result.status + "-- Adding service")
