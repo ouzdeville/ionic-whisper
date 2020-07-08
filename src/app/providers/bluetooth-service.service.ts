@@ -6,7 +6,7 @@ import { BackgroundMode } from "@ionic-native/background-mode/ngx";
 import { BluetoothLE } from "@ionic-native/bluetooth-le/ngx";
 import { WhisperConfig } from "../utils/ble/config";
 import { CryptoTools } from "../utils/ble/crypto";
-import { decode } from "base64-ts";
+import { decode, encode } from "base64-ts";
 import {
   AdvertisingParams,
   DescriptorParams,
@@ -36,9 +36,15 @@ export class BluetoothServiceService {
   S_connect: any = [];
   protected scanList = new Map<string, Boolean>();
   protected keyMaps = new Map<string, KeyReadQueue>();
+
+  protected keySendMaps = new Map<string, KeyReadQueue>();
   protected priorityMaps = new Map<string, Number>();
   cryptoTools = new CryptoTools();
   whisperConfig: WhisperConfig = new WhisperConfig();
+  protected isScanning = false;
+    protected isAdvertising = false;
+    protected scanTimeout;
+    protected isbackgroundMode = false;
 
 
   constructor(public navCtrl: NavController,
@@ -133,6 +139,7 @@ export class BluetoothServiceService {
     this.S_pair = [];
     this.scanList = new Map<string, Boolean>();
     this.keyMaps = new Map<string, KeyReadQueue>();
+    this.keySendMaps = new Map<string, KeyReadQueue>();
     this.priorityMaps = new Map<string, Number>();
 
     this.bluetoothle.isEnabled()
@@ -228,7 +235,7 @@ export class BluetoothServiceService {
 
     setTimeout(() => { this.scan(); }, this.whisperConfig.scannerWaitDurationMillis);
   }
-  
+
 
 
   // /**
@@ -293,14 +300,30 @@ export class BluetoothServiceService {
 
       }
 
-    }else if (result.status === "readRequested") {
+    } else if (result.status === "readRequested") {
       console.log('#BLE-Status:', result.status + "-- Sending my pubkey")
-      // -waiting for receiving a read request -> send my pubkey
+      // -waiting for receiving a read request -> send my pubkey! The key size is 32 bytes 
+
       var paramswr = {
         "address": result.address,
         "requestId": result.requestId,
-        "value": this.bluetoothle.bytesToEncodedString(this.bluetoothle.stringToBytes(this.keyPair.pubKey))
+        "value": ""
       };
+      let middle = Math.round(this.keyPair.pubKey.length / 2);
+      if (!this.keySendMaps.has(result.address)) {
+        this.keySendMaps.set(result.address, new KeyReadQueue(this.bluetoothle));
+        paramswr.value = this.bluetoothle.bytesToEncodedString(this.bluetoothle.
+          stringToBytes(this.keyPair.pubKey.substring(0, middle)));
+        console.log("First Response from GATT:" + paramswr.value);
+      } else {
+        paramswr.value = this.bluetoothle.bytesToEncodedString(this.bluetoothle.
+          stringToBytes(this.keyPair.pubKey.substring(middle, this.keyPair.pubKey.length)));
+        this.keySendMaps.delete(result.address);
+        console.log("Second Response from GATT:" + paramswr.value);
+      }
+
+
+
       //à revoir car ça risq d'envoyer un readRequest
       this.bluetoothle.respond(paramswr).then(respondresult => {
         console.log('#BLE-Reply-MyKey' + JSON.stringify(respondresult))
@@ -413,7 +436,7 @@ export class BluetoothServiceService {
               const cuuid = service.characteristics[0].uuid;
 
               //send data notice that write sends less than 20bytes
-              console.log("EncodedPublic key to send:" + this.bluetoothle.bytesToEncodedString(this.bluetoothle.stringToBytes(this.keyPair.pubKey)))
+              console.log("EncodedClient key to send:" + this.bluetoothle.bytesToEncodedString(this.bluetoothle.stringToBytes(this.keyPair.pubKey)))
               this.bluetoothle.writeQ({
                 "value": this.bluetoothle.bytesToEncodedString(this.bluetoothle.stringToBytes(this.keyPair.pubKey)),
                 "service": this.whisperConfig.whisperV3CharacteristicUUID,
@@ -424,25 +447,55 @@ export class BluetoothServiceService {
                 console.log('writeQ:' + JSON.stringify(writeQresult));
                 if (writeQresult.status == "written") {
                   this.scanList.set(address, true);
-
-                  this.bluetoothle.read({
-                    "address": address,
-                    "service": this.whisperConfig.whisperV3CharacteristicUUID,
-                    "characteristic": cuuid
-                  }).then(readResult => {
-                    console.log('readResult:' + JSON.stringify(readResult));
-                    let value=this.bluetoothle.bytesToString(this.bluetoothle.encodedStringToBytes(readResult.value));
-                    console.log('Decoding Key GATT Server:' + value);
-
-                  }).catch(err => console.log(err));
-
                 }
                 else {
                   this.scanList.set(address, false);
                 }
+              }).finally(() => {
+
+                //Read First Part of the Key
+                console.log("Searching Server public Key ...");
+                this.bluetoothle.read({
+                  "address": address,
+                  "service": this.whisperConfig.whisperV3CharacteristicUUID,
+                  "characteristic": cuuid
+                }).then(readResult => {
+                  //console.log('readResult1:' + JSON.stringify(readResult));
+                  let value = this.bluetoothle.bytesToString(this.bluetoothle.encodedStringToBytes(readResult.value));
+                  //console.log('Decoding Key1 GATT Server:' + value);
+                  this.keyMaps.set(address, new KeyReadQueue(this.bluetoothle));
+                  let his_keyQueue = this.keyMaps.get(address);
+                  his_keyQueue.pushKeyPart(1, readResult.value);
+                }).finally(() => {
+
+                  //Read Second Part of the Key
+                  this.bluetoothle.read({
+                    "address": address,
+                    "service": this.whisperConfig.whisperV3CharacteristicUUID,
+                    "characteristic": cuuid
+                  }).then(readResult2 => {
+                    //console.log('readResult2:' + JSON.stringify(readResult2));
+                    let value = this.bluetoothle.bytesToString(this.bluetoothle.encodedStringToBytes(readResult2.value));
+                    //console.log('Decoding Key2 GATT Server:' + value);
+                    let his_keyQueue = this.keyMaps.get(address);
+                    his_keyQueue.pushKeyPart(2, readResult2.value);
+                    let his_pubkey = his_keyQueue.getPublicKey().substring(0,this.keyPair.pubKey.length);
+                    this.keyMaps.delete(address);
+                    if (this.debug)
+                      console.log("Server public Key:" + his_pubkey);
+                    //diffie-hellman set data into ping, pear or connect
+                    this.process_diffie_hellman(this.keyPair, his_pubkey, readResult2);
+
+                  }).catch(err => console.log(err));
+
+                }).catch(err => console.log(err));
+
               });
 
-              //send a ReadRequest to get the sever Public Key
+
+
+
+
 
             }
 
@@ -528,6 +581,10 @@ export class BluetoothServiceService {
 
     console.log(msg, "error");
   }
+  protected prepareBackgroundMode() {
+
+    this.isbackgroundMode=true;
+  }
 
 
 
@@ -557,5 +614,8 @@ class KeyReadQueue {
     });
     return tempkey;
   }
+
+
+ 
 
 }
