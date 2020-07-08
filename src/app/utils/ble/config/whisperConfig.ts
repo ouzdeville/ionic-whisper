@@ -34,8 +34,9 @@ export class WhisperConfig {
 
 
     /*Advertising params*/
-    advAndroidparams= {
+    advParams= {
         "service":this.whisperV3CharacteristicUUID, //Android
+        "services":[this.whisperV3CharacteristicUUID], //iOS
         "name":"DaanCovid19",
         "manufacturerId":this.nodleBluetoothManufacturerId,
         "manufacturerSpecificData":'',//whisper priority for a specific advertising
@@ -46,7 +47,7 @@ export class WhisperConfig {
         "includeDeviceName":false,
         "includeTxPowerLevel":false
       };
-      advIOSparams= {
+      /*advIOSparams= {
         "services":[this.whisperV3CharacteristicUUID], //iOS
         "name":"DaanCovid19",
         "manufacturerId":this.nodleBluetoothManufacturerId,
@@ -57,7 +58,7 @@ export class WhisperConfig {
         "txPowerLevel":"high",
         "includeDeviceName":false,
         "includeTxPowerLevel":false
-      };
+      }*/
 
       serviceParam = {
         service: this.whisperV3CharacteristicUUID,

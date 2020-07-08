@@ -6,6 +6,7 @@ import { BackgroundMode } from "@ionic-native/background-mode/ngx";
 import { BluetoothLE } from "@ionic-native/bluetooth-le/ngx";
 import { WhisperConfig } from "../utils/ble/config";
 import { CryptoTools } from "../utils/ble/crypto";
+import { decode } from "base64-ts";
 import {
   AdvertisingParams,
   DescriptorParams,
@@ -30,10 +31,12 @@ export class BluetoothServiceService {
   };
   public currentPubKey: any;
   noBluetoothAlertSent: boolean = false;
-  advParams: any = {};
+  //advParams: any = {};
   S_pair: any = [];
   S_connect: any = [];
-  scanList: string[] = [];
+  protected scanList = new Map<string, Boolean>();
+  protected keyMaps = new Map<string, KeyReadQueue>();
+  protected priorityMaps = new Map<string, Number>();
   cryptoTools = new CryptoTools();
   whisperConfig: WhisperConfig = new WhisperConfig();
 
@@ -58,10 +61,10 @@ export class BluetoothServiceService {
     this.platform.ready().then((readySource) => {
       if (readySource === 'cordova') {
 
-        this.advParams = this.whisperConfig.advAndroidparams;
+        /*this.advParams = this.whisperConfig.advAndroidparams;
         if (this.platform.is('ios')) {
           this.advParams = this.whisperConfig.advIOSparams;
-        }
+        }*/
         this.bluetoothle.initialize({ "request": true, "statusReceiver": false, "restoreKey": "bluetoothleplugin" }).subscribe(result => {
           console.log('#BLE-initialize' + JSON.stringify(result)) // logs 'enabled'
         });
@@ -70,7 +73,6 @@ export class BluetoothServiceService {
           console.log('#BLE-initializedPeripheral', + JSON.stringify(result));
           this.initializeResult(result);
         });
-        this.keyPair = this.getLastKeyPair();
       }
     });
     //this.backgroundMode.on('enable').subscribe(() => {
@@ -89,7 +91,7 @@ export class BluetoothServiceService {
   //    * @param {function} error a callback function for error
   //    * @param {JSON} params the advertising parameters
   //    */
-  async updateAdvertising(priority, success, error, params) {
+  async updateAdvertising(priority, errorProcess, params) {
     const encodedPriority = this.bluetoothle.bytesToEncodedString(priority);
 
     await this.bluetoothle.isAdvertising().then(result => {
@@ -100,12 +102,14 @@ export class BluetoothServiceService {
           console.log('stopAdvertising' + JSON.stringify(result));
         });
       }
+    }).finally(() => {
+      params.manufacturerSpecificData = encodedPriority;
+      this.bluetoothle.startAdvertising(params).then(result => {
+        console.log("startAdvertising" + JSON.stringify(result));
+      }).catch(err => errorProcess(err));
     });
 
-    params.manufacturerSpecificData = encodedPriority;
-    this.bluetoothle.startAdvertising(params).then(result => {
-      console.log("startAdvertising" + JSON.stringify(result));
-    });
+
 
 
   }
@@ -127,7 +131,9 @@ export class BluetoothServiceService {
     console.log('scanning');
     this.S_connect = [];
     this.S_pair = [];
-    this.scanList = [];
+    this.scanList = new Map<string, Boolean>();
+    this.keyMaps = new Map<string, KeyReadQueue>();
+    this.priorityMaps = new Map<string, Number>();
 
     this.bluetoothle.isEnabled()
       .then(() => {
@@ -136,14 +142,15 @@ export class BluetoothServiceService {
         this.priority = this.cryptoTools.generatePriority();
         this.my_priority_int = (this.priority[0] << 8) + this.priority[1];
         console.log("My priority: " + this.my_priority_int);
+        //- retrieve my last up to date keyPair from db and set it on this.keyPair
+        this.keyPair = this.getLastKeyPair();
         /*if (this.debug) {
           this.priority[1] = 0xFE;// just for debugging
         }*/
         //- startAdvertising by calling updateAdvertising
-        this.updateAdvertising(this.priority, this.startAdvertisingSuccess, this.handleError, this.advParams)
+        this.updateAdvertising(this.priority, this.handleError, this.whisperConfig.advParams)
 
-        //- retrieve my last up to date keyPair from db and set it on this.keyPair
-        this.currentPubKey = this.getLastKeyPair();
+
 
         /**Scan device around and take that has the whisper UUID
          * lancer le scan
@@ -179,16 +186,7 @@ export class BluetoothServiceService {
           this.scanResult(result);
         });
 
-      }).catch(() => {
-        if (!this.noBluetoothAlertSent) {
-          this.notifier.schedule({
-            id: 1,
-            text: 'allumez votre bluetooth pour ....',
-            data: { secret: '' }
-          });
-          this.noBluetoothAlertSent = true;
-        }
-      });
+      }).catch(err => console.log(err));
 
     setTimeout(() => {
       this.bluetoothle.isScanning().then(isScanning => {
@@ -209,60 +207,19 @@ export class BluetoothServiceService {
              * */
             console.log("Size S_connect" + this.S_connect.length);
             this.S_connect.forEach((device) => {
-              this.bluetoothle.connect({
+              let subs_connect = this.bluetoothle.connect({
                 "address": device.address
 
               }).subscribe(connectResult => {
                 console.log('connect:' + JSON.stringify(connectResult));
-                this.bluetoothle.discover({
-                  "address": device.address,
-                  "clearCache": true
-                }).then(discoverResult => {
-                  if (this.debug)
-                    console.log('discoverResult:' + JSON.stringify(discoverResult));
-
-                    discoverResult.services.forEach((service) => {
-
-                      if (service.uuid === this.whisperConfig.whisperV3CharacteristicUUID) {
-              
-                        const cuuid = service.characteristics[0].uuid;
-              
-                          //send data
-                          this.bluetoothle.write({
-                            "value": this.keyPair.pubKey,
-                            "service": this.whisperConfig.whisperV3CharacteristicUUID,
-                            "characteristic": cuuid,
-                            "type": "withResponse",
-                            "address": device.address
-                          }).then(result => {
-                            console.log('Write:', result.status);
-                            console.log('Address:', device.address);
-                            console.log('His key from write:', result.value);
-                            //diffie-hellman set data into ping, pear or connect
-                            this.process_diffie_hellman(this.keyPair, result.value);
-                          });
-                          
-                        }
-              
-                    });
-
-
-
-
-
-
-
-
-
-                  
-                });
-
+                this.sendMyPublicKeyTo(device.address);
+                //subs_connect.unsubscribe();
               });
             });
 
-          });
+          }).catch(err => console.log(err));
         }
-      });
+      }).catch(err => console.log(err));
 
     }, this.whisperConfig.scannerScanDurationMillis);
 
@@ -271,62 +228,7 @@ export class BluetoothServiceService {
 
     setTimeout(() => { this.scan(); }, this.whisperConfig.scannerWaitDurationMillis);
   }
-
-  onDeviceDiscovered(device) {
-    console.log("Discovered " + JSON.stringify(device, null, 2));
-    this.ngZone.run(() => {
-      this.devices.push(device);
-    });
-  }
-
-  async scanError(error) {
-    this.setStatus("Error " + error);
-    let toast = await this.toastCtrl.create({
-      message: "Error scanning for Bluetooth low energy devices",
-      position: "middle",
-      duration: 5000
-    });
-    toast.present();
-  }
-
-  setStatus(message) {
-    console.log(message);
-    this.ngZone.run(() => {
-      this.statusMessage = message;
-    });
-  }
-
-  startAdvertisingSuccess(result) {
-    console.log("startScanSuccess(" + result.status + ")");
-
-  }
-
-  startAdvertisingError(result) {
-    console.log("startAdvertisingError(" + result.status + ")");
-
-  }
-
-  getLastKeyPair() {
-
-    let keyPair = {
-      pubKey: "",
-      prvKey: ""
-    };
-
-    //keyPair = this.cryptoTools.generateKeyPair();
-
-    if (this.debug) {
-      console.log("Debug key Pair");
-      keyPair = {
-        pubKey: "Q2UyDI59OMY+OMyIZ29xBWugpsBs5a8tyTTlifLHjTE=",
-        prvKey: "cMp/vTtLBZS6c6wIQgVgx1aTD8kzARdCI8VRDOSBxHI="
-      }
-    }
-    console.log("keyPair:" + JSON.stringify(keyPair));
-    //TODO with @Junior
-
-    return keyPair;
-  }
+  
 
 
   // /**
@@ -347,53 +249,62 @@ export class BluetoothServiceService {
   initializeResult(result) {
     console.log("#BLE---initializeResult");
     console.log(JSON.stringify(result));
-    this.currentPubKey = this.getLastKeyPair();
+    //if(result.service == this.whisperConfig.whisperV3CharacteristicUUID) return;
+    //this.currentPubKey = this.getLastKeyPair();
     if (result.status === "enabled") {
       console.log('#BLE-Status:', result.status + "-- Adding service")
       this.bluetoothle.addService(this.whisperConfig.serviceParam).then(serviceresult => {
         console.log('#BLE-addService' + JSON.stringify(serviceresult))
-      });
-    } else if (result.status === "readRequested") {
-      console.log('#BLE-Status:', result.status + "-- Replying with pubkey")
-      // -waiting for receiving a read request -> replying with pubkey
-      var params = {
-        "requestId": result.requestId + 1,
-        "value": this.keyPair.pubKey //Read Hello World
-      };
-      this.bluetoothle.respond(params).then(respondresult => {
-        console.log('#BLE-Reply' + JSON.stringify(respondresult))
-      });;
+      }).catch(err => console.log(err));
     }
     else if (result.status === "writeRequested") {
       console.log('#BLE-Status:', result.status + "-- Reading his pubkey")
       // -waiting for receiving a write request -> read his pubkey
-      /*
-       {
-          "status":"writeRequested",
-          "address":"5163F1E0-5341-AF9B-9F67-613E15EC83F7",
-          "service":"1234",
-          "characteristic":"ABCD",
-          "requestId":1, //This integer value will be incremented every read/writeRequested
-          "value":"V3JpdGUgSGVsbG8gV29ybGQ=", //Write Hello World
-          "offset":0
-        }
-      */
-      //The "Write Response" contains only an error code indicating whether the write was successful or not.
       var paramswr = {
-        "requestId": result.requestId + 1,
-        "status": "connected",
-        "value": this.keyPair.pubKey
+        "address": result.address,
+        "requestId": result.requestId,
+        "value": this.bluetoothle.bytesToEncodedString(this.bluetoothle.stringToBytes(this.keyPair.pubKey))
       };
       //à revoir car ça risq d'envoyer un readRequest
       this.bluetoothle.respond(paramswr).then(respondresult => {
         console.log('#BLE-Reply' + JSON.stringify(respondresult))
-      });
-      if (this.debug)
-        console.log("His public Key:" + result.value);
-      var publicKey = result.value;
-      var address = result.address;
-      //diffie-hellman set data into ping, pear or connect
-      this.process_diffie_hellman(this.keyPair, publicKey);
+      }).catch(err => console.log(err));
+      if (!this.keyMaps.has(result.address)) {
+        this.keyMaps.set(result.address, new KeyReadQueue(this.bluetoothle));
+      }
+      let his_keyQueue = this.keyMaps.get(result.address);
+      his_keyQueue.pushKeyPart(result.requestId, result.value);
+
+      if (his_keyQueue.isCompleted()) {
+        let his_pubkey = his_keyQueue.getPublicKey();
+        this.keyMaps.delete(result.address);
+        //send back Key if needed 
+        /*if (!this.scanList.get(result.address)) {
+          console.log("Send Key as Server");
+          this.sendMyPublicKeyTo(result.address);
+
+        }*/
+        //dont forget to send my public key
+        if (this.debug)
+          console.log("His public Key:" + his_pubkey);
+        //diffie-hellman set data into ping, pear or connect
+        this.process_diffie_hellman(this.keyPair, his_pubkey, result);
+
+
+      }
+
+    }else if (result.status === "readRequested") {
+      console.log('#BLE-Status:', result.status + "-- Sending my pubkey")
+      // -waiting for receiving a read request -> send my pubkey
+      var paramswr = {
+        "address": result.address,
+        "requestId": result.requestId,
+        "value": this.bluetoothle.bytesToEncodedString(this.bluetoothle.stringToBytes(this.keyPair.pubKey))
+      };
+      //à revoir car ça risq d'envoyer un readRequest
+      this.bluetoothle.respond(paramswr).then(respondresult => {
+        console.log('#BLE-Reply-MyKey' + JSON.stringify(respondresult))
+      }).catch(err => console.log(err));
 
     }
     else if (result.status === "connected") {
@@ -420,52 +331,22 @@ export class BluetoothServiceService {
 
   }
 
-  servicesuccess(result) {
-
-
-
-  }
-
-  respondSuccess(result) {
-
-
-
-  }
-
-
   // /**
   //  *
   //  * @param result
   //  * status => scanStarted = Scan has started
   //     status => scanResult = Scan has found a device
-  //               name = the device's display name
-  //               address = the device's address / identifier for connecting to the object
-  //               rssi = signal strength
-  //               advertisement = advertisement data in encoded string of bytes, use bluetoothle.encodedStringToBytes() (Android)
-  //               advertisement = advertisement hash with the keys specified here (iOS)
-  //               advertisement = empty (Windows)
   //  */
   scanResult(device: any) {
     /**
-     * * recupé rer la priorité de l'autre device sur le manufacturerSpecificData à l'id nodleBluetoothManufacturerId
+     * * recupé rer la priorité de l'autre device sur le manufacturerSpecificData
      * * si la priorité est inférieure à la mienne ou la ma clé à changer alors ajouter ce device à la list S_connect
      * * else ajouter à la liste S_pair
-     * * mettre à jour la table whisperEvent
-     * * keyPair = currentPubKey
-     * * parcourir la liste S_pair et vérifier si la dernière date de connexion est inférieur à
-     * * lastConnect != null && mustThrottle =now < lastConnect.connectTimeMillis + this.whisperConfig.mustReconnectAfterMillis
-     * * si mustThrottle == true alors mettre à jour la table ping and delet from S_connect
-     * * Pour chque elemt de S_connect
-     * * * lire la public
-     * * * send ma cle public
-     * * * lancer getInteraction
-     * * * mettre jour la table connect
      */
-
     console.log("scanResult: New Device:" + JSON.stringify(device))
-    console.log("this.scanList.includes " + this.scanList.includes(device.address));
-    if (device.status === "scanResult" && !this.scanList.includes(device.address)) {
-      this.scanList.push(device.address);
+    console.log("this.scanList.includes " + this.scanList.has(device.address));
+    if (device.status === "scanResult" && !this.scanList.has(device.address)) {
+      this.scanList.set(device.address, false);
       let manufacturerData: any;
 
       if (typeof device.advertisement !== 'string') {
@@ -475,7 +356,7 @@ export class BluetoothServiceService {
         manufacturerData = this.bluetoothle.encodedStringToBytes(device.advertisement)
       }
 
-      console.log("manufacturerData: New Device:" + manufacturerData);
+      //console.log("manufacturerData: New Device:" + manufacturerData);
       var his_priority = (manufacturerData[7] << 8) + manufacturerData[8];
       console.log("His Prio: " + his_priority + "--- My Prio:" + this.my_priority_int);
       let his_value = {
@@ -484,10 +365,10 @@ export class BluetoothServiceService {
         "address": device.address,
         "priority": his_priority
       };
-      let new_keyPair = this.getLastKeyPair();
+      //let new_keyPair = this.getLastKeyPair();
       let now = new Date();
-      if (his_value.priority < this.my_priority_int || new_keyPair != this.keyPair) {
-        this.keyPair = new_keyPair;
+      if (his_value.priority < this.my_priority_int) {
+        //this.keyPair = new_keyPair;
         let lastConnect = this.getLastConnect(his_value.address);
         let mustThrottle = false;
         // mustThrottle =now < lastConnect.connectTimeMillis + this.whisperConfig.mustReconnectAfterMillis;
@@ -513,6 +394,97 @@ export class BluetoothServiceService {
   }
 
 
+  sendMyPublicKeyTo(address: string) {
+    this.bluetoothle.isConnected({
+      "address": address
+    }).then(connection => {
+      if (connection.isConnected) {
+        this.bluetoothle.discover({
+          "address": address,
+          "clearCache": true
+        }).then(discoverResult => {
+          if (this.debug)
+            console.log('discoverResult:' + JSON.stringify(discoverResult));
+
+          discoverResult.services.forEach((service) => {
+
+            if (service.uuid === this.whisperConfig.whisperV3CharacteristicUUID) {
+
+              const cuuid = service.characteristics[0].uuid;
+
+              //send data notice that write sends less than 20bytes
+              console.log("EncodedPublic key to send:" + this.bluetoothle.bytesToEncodedString(this.bluetoothle.stringToBytes(this.keyPair.pubKey)))
+              this.bluetoothle.writeQ({
+                "value": this.bluetoothle.bytesToEncodedString(this.bluetoothle.stringToBytes(this.keyPair.pubKey)),
+                "service": this.whisperConfig.whisperV3CharacteristicUUID,
+                "characteristic": cuuid,
+                "type": "noResponse",
+                "address": address
+              }).then(writeQresult => {
+                console.log('writeQ:' + JSON.stringify(writeQresult));
+                if (writeQresult.status == "written") {
+                  this.scanList.set(address, true);
+
+                  this.bluetoothle.read({
+                    "address": address,
+                    "service": this.whisperConfig.whisperV3CharacteristicUUID,
+                    "characteristic": cuuid
+                  }).then(readResult => {
+                    console.log('readResult:' + JSON.stringify(readResult));
+                    let value=this.bluetoothle.bytesToString(this.bluetoothle.encodedStringToBytes(readResult.value));
+                    console.log('Decoding Key GATT Server:' + value);
+
+                  }).catch(err => console.log(err));
+
+                }
+                else {
+                  this.scanList.set(address, false);
+                }
+              });
+
+              //send a ReadRequest to get the sever Public Key
+
+            }
+
+          });
+        }).catch(err => console.log(err));
+
+
+
+      }
+
+
+
+    }).catch(err => console.log(err));
+
+
+
+  }
+
+
+  getLastKeyPair() {
+
+    let keyPair = {
+      pubKey: "",
+      prvKey: ""
+    };
+
+    //keyPair = this.cryptoTools.generateKeyPair();
+
+    if (this.debug) {
+      keyPair = {
+        pubKey: "Q2UyDI59OMY+OMyIZ29xBWugpsBs5a8tyTTlifLHjTE=",
+        prvKey: "cMp/vTtLBZS6c6wIQgVgx1aTD8kzARdCI8VRDOSBxHI="
+      }
+    }
+    console.log("keyPair:" + JSON.stringify(keyPair));
+    //TODO with @Junior
+
+    return keyPair;
+  }
+  private delay(ms: number) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
 
   getLastConnect(address: string) {
     return -1;
@@ -521,8 +493,9 @@ export class BluetoothServiceService {
 
   }
 
-  process_diffie_hellman(keyPair, publicKey) {
+  process_diffie_hellman(keyPair, publicKey, deviceInfo) {
     let tokenPair = this.cryptoTools.getInteraction(keyPair, publicKey);
+    console.log('Diffie_Hellman:' + JSON.stringify(tokenPair));
     //save it
   }
 
@@ -556,8 +529,33 @@ export class BluetoothServiceService {
     console.log(msg, "error");
   }
 
-  private delay(ms: number) {
-    return new Promise(resolve => setTimeout(resolve, ms));
+
+
+}
+
+class KeyReadQueue {
+  protected publicKeyparts = new Map<number, string>();
+  public constructor(protected bluetoothLE: BluetoothLE) { }
+  pushKeyPart(requestId: number, pubKeyPart: string) {
+    this.publicKeyparts.set(requestId, pubKeyPart);
+  }
+
+  isCompleted() {
+    let tempkey = this.getPublicKey();
+    console.log("Decoding:" + tempkey + " ----byte size:" + decode(tempkey).length);
+    return (decode(tempkey).length == 32);
+  }
+
+  getPublicKey() {
+    let tempkey = "";
+    let keys = [...this.publicKeyparts.keys()];
+    let sortedIds = keys.sort((x, y) => {
+      return x - y;
+    });
+    sortedIds.forEach((id) => {
+      tempkey += this.bluetoothLE.bytesToString(this.bluetoothLE.encodedStringToBytes(this.publicKeyparts.get(id)));
+    });
+    return tempkey;
   }
 
 }
