@@ -13,6 +13,8 @@ import { LocalNotifications } from '@ionic-native/local-notifications/ngx';
 import {Diagnostic} from "@ionic-native/diagnostic/ngx";
 import { BackgroundMode } from '@ionic-native/background-mode/ngx';
 import { AndroidPermissions } from '@ionic-native/android-permissions/ngx';
+import { SQLitePorter } from '@ionic-native/sqlite-porter/ngx';
+import { SQLite } from '@ionic-native/sqlite/ngx';
 
 @NgModule({
   declarations: [AppComponent],
@@ -27,6 +29,8 @@ import { AndroidPermissions } from '@ionic-native/android-permissions/ngx';
     BackgroundMode,
     { provide: RouteReuseStrategy, useClass: IonicRouteStrategy },
     AndroidPermissions,
+    SQLite,
+    SQLitePorter
   ],
   bootstrap: [AppComponent]
 })
