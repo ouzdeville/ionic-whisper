@@ -39,12 +39,15 @@
     "cordova-plugin-bluetoothle": "^4.5.14",
     "cordova-plugin-device": "^2.0.3",
     "cordova-plugin-local-notification": "^0.9.0-beta.2",
+    "cordova-plugin-stetho-android": "0.0.1",
+    "cordova-sqlite-storage": "^5.0.0",
     "cordova.plugins.diagnostic": "^5.0.2",
     "curve25519-js": "0.0.4",
     "rxjs": "~6.5.1",
     "sqlite3": "^5.0.0",
     "tslib": "^1.10.0",
     "tweetnacl-ts": "^1.0.3",
+    "uk.co.workingedge.cordova.plugin.sqliteporter": "^1.1.1",
     "zone.js": "~0.10.2"
   },
   "devDependencies": {
@@ -91,7 +94,10 @@
       "cordova-plugin-ionic-webview": {
         "ANDROID_SUPPORT_ANNOTATIONS_VERSION": "27.+"
       },
-      "cordova-plugin-ionic-keyboard": {}
+      "cordova-plugin-ionic-keyboard": {},
+      "cordova-sqlite-storage": {},
+      "uk.co.workingedge.cordova.plugin.sqliteporter": {},
+      "com.outsystems.mobile.stetho": {}
     },
     "platforms": [
       "android"

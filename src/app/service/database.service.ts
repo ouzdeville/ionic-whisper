@@ -5,13 +5,6 @@ import { HttpClient } from '@angular/common/http';
 import { SQLite, SQLiteObject } from '@ionic-native/sqlite/ngx';
 import { BehaviorSubject, Observable } from 'rxjs';
  
-export interface Dev {
-  id: number,
-  name: string,
-  skills: any[],
-  img: string
-}
- 
 @Injectable({
   providedIn: 'root'
 })
@@ -27,11 +20,13 @@ export class DatabaseService {
  
   constructor(private plt: Platform, private sqlitePorter: SQLitePorter, private sqlite: SQLite, private http: HttpClient) {
     this.plt.ready().then(() => {
+      console.log('Junior');
       this.sqlite.create({
         name: 'daan-covid19.db',
         location: 'default'
       })
       .then((db: SQLiteObject) => {
+          console.log('Jr');
           this.database = db;
           this.seedDatabase();
       });
@@ -85,18 +80,22 @@ export class DatabaseService {
 
   getLastUserKeyPair(){
     return this.database.executeSql('SELECT * FROM user_key_pairs ORDER BY time_reference DESC LIMIT 1', []).then(data => {
-      return {
-        id: data.rows.item(0).id,
-        private_key: data.rows.item(0).private_key, 
-        public_key: data.rows.item(0).public_key, 
-        time_reference: data.rows.item(0).time_reference,
-        expiry_after_sec: data.rows.item(0).expiry_after_sec
+      if(data.rows.length > 0){
+        return {
+          id: data.rows.item(0).id,
+          private_key: data.rows.item(0).private_key, 
+          public_key: data.rows.item(0).public_key, 
+          time_reference: data.rows.item(0).time_reference,
+          expiry_after_sec: data.rows.item(0).expiry_after_sec
+        }
+      }
+      else{
+        return null;
       }
     });
   }
 
   getUserKeyPairbyTimeReference(time: Number){
-    //return keys which time is between time_reference AND time_reference + (expiry_after_sec * 1000)
     return this.database.executeSql('SELECT * FROM user_key_pairs WHERE time_reference <= ? AND (time_reference + (expiry_after_sec * 1000)) >= ? ORDER BY time_reference DESC', [time, time]).then(data => {
       let userkeyPairs = [];
  
@@ -120,7 +119,8 @@ export class DatabaseService {
   addWhisperEvent(timestamp: Number, code: Number, int1: Number, int2: Number, str1: String){
     let data = [timestamp, code, int1, int2, str1];
     return this.database.executeSql('INSERT INTO whisper_events (timestamp, code, int1, int2, str1) VALUES (?, ?, ?, ?, ?)', data).then(data => {
-      this.getAllWhisperEvents();
+      //this.getAllWhisperEvents();
+      return data;
     });
   }
   /** TODO: define method for getting Event between two periods (timestamps) */
@@ -176,7 +176,7 @@ export class DatabaseService {
     let data = [initiator, peripheral_hash, connect_time_ms, adv_v, adv_pubkey, rssi, pet_id];
     return this.database.executeSql('INSERT INTO ble_connect_events (initiator, peripheral_hash, connect_time_ms, adv_v, adv_pubkey, rssi, private_encounter_token_id) VALUES (?, ?, ?, ?, ?, ?, ?)', data).then((data: any) => {
       //return item recorded
-      return data
+      return data;
     });
   }
 
@@ -228,16 +228,21 @@ export class DatabaseService {
 
   getLastConnect(peripheralHash: string){
     return this.database.executeSql('SELECT * FROM ble_connect_events WHERE peripheral_hash = ? ORDER BY connect_time_ms DESC LIMIT 1', [peripheralHash]).then(data => {
-      return {
-            id: data.rows.item(0).id,
-            initiator: data.rows.item(0).initiator, 
-            peripheral_hash: data.rows.item(0).peripheral_hash, 
-            connect_time_ms: data.rows.item(0).connect_time_ms,
-            adv_v: data.rows.item(0).adv_v,
-            adv_pubkey: data.rows.item(0).adv_pubkey,
-            rssi: data.rows.item(0).rssi,
-            private_encounter_token_id: data.rows.item(0).private_encounter_token_id
+      if (data.rows.length > 0){
+        return {
+          id: data.rows.item(0).id,
+          initiator: data.rows.item(0).initiator, 
+          peripheral_hash: data.rows.item(0).peripheral_hash, 
+          connect_time_ms: data.rows.item(0).connect_time_ms,
+          adv_v: data.rows.item(0).adv_v,
+          adv_pubkey: data.rows.item(0).adv_pubkey,
+          rssi: data.rows.item(0).rssi,
+          private_encounter_token_id: data.rows.item(0).private_encounter_token_id
+    }
       }
+      else{
+        return null;
+      } 
     });
   }
 
@@ -271,12 +276,17 @@ export class DatabaseService {
 
   getLastPing(petRowId: number){
     return this.database.executeSql('SELECT * FROM ble_ping_events WHERE private_encounter_token_id = ? ORDER BY ping_timestamp_ms DESC LIMIT 1', [petRowId]).then(data => {
-      return {
-        id: data.rows.item(0).id,
-        ping_timestamp_ms: data.rows.item(0).ping_timestamp_ms, 
-        rssi: data.rows.item(0).rssi, 
-        elapsed_time_duration: data.rows.item(0).elapsed_time_duration,
-        private_encounter_token_id: data.rows.item(0).private_encounter_token_id
+      if(data.rows.length > 0){
+        return {
+          id: data.rows.item(0).id,
+          ping_timestamp_ms: data.rows.item(0).ping_timestamp_ms, 
+          rssi: data.rows.item(0).rssi, 
+          elapsed_time_duration: data.rows.item(0).elapsed_time_duration,
+          private_encounter_token_id: data.rows.item(0).private_encounter_token_id
+        }
+      }
+      else{
+        return null;
       }
     });
   }
@@ -312,7 +322,7 @@ export class DatabaseService {
   }
 
   getAllPrivateEncounterTokenSince(timeEpochMillis: Number){
-    return this.database.executeSql('SELECT * FROM private_encounter_tokens WHERE last_seen > ?', [timeEpochMillis]).then(data => {
+    return this.database.executeSql('SELECT * FROM private_encounter_tokens WHERE last_seen >= ?', [timeEpochMillis]).then(data => {
       let privateEncounterTokens = [];
  
       if (data.rows.length > 0) {
@@ -333,7 +343,7 @@ export class DatabaseService {
   }
 
   getAllRemainingTellTokenSince(timeEpochMillis: Number){
-    return this.database.executeSql('SELECT id, tell_token, geo_hash FROM private_encounter_tokens WHERE last_seen > ? AND shared = 0 ORDER BY last_seen DESC', [timeEpochMillis]).then(data => {
+    return this.database.executeSql('SELECT id, tell_token, geo_hash FROM private_encounter_tokens WHERE last_seen >= ? AND shared = 0 ORDER BY last_seen DESC', [timeEpochMillis]).then(data => {
       let privateEncounterTokens = [];
  
       if (data.rows.length > 0) {
@@ -350,7 +360,7 @@ export class DatabaseService {
   }
 
   getRemainingTellTokenSince(timeEpochMillis: Number, limit: Number){
-    return this.database.executeSql('SELECT id, tell_token, geo_hash FROM private_encounter_tokens WHERE last_seen > ? AND shared = 0 ORDER BY last_seen DESC LIMIT ?', [timeEpochMillis, limit]).then(data => {
+    return this.database.executeSql('SELECT id, tell_token, geo_hash FROM private_encounter_tokens WHERE last_seen >= ? AND shared = 0 ORDER BY last_seen DESC LIMIT ?', [timeEpochMillis, limit]).then(data => {
       let privateEncounterTokens = [];
  
       if (data.rows.length > 0) {
@@ -369,10 +379,15 @@ export class DatabaseService {
 
   getHearToken(tell_token: string){
     return this.database.executeSql('SELECT id, hear_token, geo_hash FROM private_encounter_tokens WHERE tell_token = ? LIMIT 1', [tell_token]).then(data => {
-      return {
-        id: data.rows.item(0).id,
-        hear_token: data.rows.item(0).hear_token, 
-        geo_hash: data.rows.item(0).geo_hash
+      if(data.rows.length > 0){
+          return {
+          id: data.rows.item(0).id,
+          hear_token: data.rows.item(0).hear_token, 
+          geo_hash: data.rows.item(0).geo_hash
+        }
+      }
+      else{
+        return null;
       }
     });
   }
@@ -395,7 +410,7 @@ export class DatabaseService {
   }
 
   getAllHearTokenSince(timeEpochMillis: Number){
-    return this.database.executeSql('SELECT id, hear_token, geo_hash FROM private_encounter_tokens WHERE last_seen > ? ', [timeEpochMillis]).then(data => {
+    return this.database.executeSql('SELECT id, hear_token, geo_hash FROM private_encounter_tokens WHERE last_seen >= ? ', [timeEpochMillis]).then(data => {
       let privateEncounterTokens = [];
  
       if (data.rows.length > 0) {
