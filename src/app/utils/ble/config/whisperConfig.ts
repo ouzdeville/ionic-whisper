@@ -5,7 +5,7 @@ import { Injectable } from '@angular/core';
 export class WhisperConfig {
   constructor() {}
     /* organization code */
-    organizationCode= 0x01;
+    organizationCode= 0x02;
 
     /* location tracker parameters */
     enablePrivacyBox= false;
@@ -47,24 +47,12 @@ export class WhisperConfig {
         "includeDeviceName":false,
         "includeTxPowerLevel":false
       };
-      /*advIOSparams= {
-        "services":[this.whisperV3CharacteristicUUID], //iOS
-        "name":"DaanCovid19",
-        "manufacturerId":this.nodleBluetoothManufacturerId,
-        "manufacturerSpecificData":'', //whisper priority for a specific advertising
-        "mode":"lowLatency",
-        "connectable":true,
-        "timeout":0,
-        "txPowerLevel":"high",
-        "includeDeviceName":false,
-        "includeTxPowerLevel":false
-      }*/
 
       serviceParam = {
         service: this.whisperV3CharacteristicUUID,
         characteristics: [
           {
-            uuid: "ABCD",
+            uuid: this.whisperV3CharacteristicUUID,
             permissions: {
               read: true,
               write: true,

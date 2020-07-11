@@ -10,13 +10,13 @@ import { DatabaseService} from './../service/database.service';
 })
 export class TabsPage {
 
+  
   constructor(private bluetoothService: BluetoothServiceService,
     public permissionBleService: PermissionBleService, private db: DatabaseService) { }
 
   ngOnInit() {
     try {
-      this.permissionBleService.requestBluetoothPermission();
-      this.bluetoothService.startScan();
+     
 
     } catch (error) {
       console.log('tracking or bluetooth not work', error);
@@ -26,6 +26,8 @@ export class TabsPage {
       this.db.getDatabaseState().subscribe(ready => {
         if (ready) {
           console.log("Database is ready !");
+          this.permissionBleService.requestBluetoothPermission();
+          this.bluetoothService.startTracking();
         }
       });
     } catch (error) {
@@ -38,5 +40,8 @@ export class TabsPage {
     this.permissionBleService.requestBluetoothPermission();
 
   }
+  
+  
+  
 
 }

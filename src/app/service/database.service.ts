@@ -467,12 +467,16 @@ export class DatabaseService {
   getPrivateEncounterTokens(): Observable<any[]> {
     return this.private_encounter_tokens.asObservable();
   }
+
+  getUserKeyPairs(): Observable<any[]> {
+    return this.user_key_pairs.asObservable();
+  }
  
-  /* getConnectEvents(): Observable<any[]> {
+   getConnectEvents(): Observable<any[]> {
     return this.ble_connect_events.asObservable();
   }
  
   getPingEvents(): Observable<any[]> {
     return this.ble_ping_events.asObservable();
-  } */
+  } 
 }

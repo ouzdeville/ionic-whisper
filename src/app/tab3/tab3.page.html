@@ -1,17 +1,29 @@
 <ion-header [translucent]="true">
   <ion-toolbar>
     <ion-title>
-      Tab 3
+      Debug-Mode: Connections 
     </ion-title>
   </ion-toolbar>
 </ion-header>
 
 <ion-content [fullscreen]="true">
-  <ion-header collapse="condense">
-    <ion-toolbar>
-      <ion-title size="large">Tab 3</ion-title>
-    </ion-toolbar>
-  </ion-header>
-
-  <app-explore-container name="Tab 3 page"></app-explore-container>
-</ion-content>
+  <ion-button   (click)="doRefresh()" color="success" shape="full" expand="block">
+    Push to Refresh
+   </ion-button>
+  <ion-list>
+    
+    <ion-item lines="inset" *ngFor="let connect of connects">
+      <ion-label>
+        <h5>Connection</h5>
+        <p>Id:{{connect.id}}</p>
+        <p>initiator:{{connect.initiator}}</p>
+        <p>Hash:{{connect.peripheral_hash}}</p>
+        <p>connect_time_ms:{{connect.connect_time_ms}}</p>
+        <p>rssi:{{connect.rssi}}</p>
+        <p>TokenId:{{connect.private_encounter_token_id}}</p>
+        <p>adv_pubkey:{{connect.adv_pubkey}}</p>
+        <p>organization:{{connect.organization}}</p>
+        <p>adv_v:{{connect.adv_v}}</p>
+      </ion-label>
+    </ion-item>
+  </ion-list>
