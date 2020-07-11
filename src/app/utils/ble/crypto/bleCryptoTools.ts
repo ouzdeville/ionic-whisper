@@ -1,6 +1,6 @@
 import { WhisperConfig } from '../config';
 import { sharedKey, generateKeyPair } from 'curve25519-js';
-import { randomBytes, auth,hash,decodeUTF8} from "tweetnacl-ts";
+import { randomBytes,hash,decodeUTF8, blake2b} from "tweetnacl-ts";
 import { decode,encode} from "base64-ts";
 import { Injectable } from '@angular/core';
 
@@ -8,6 +8,7 @@ import { Injectable } from '@angular/core';
 
 export class CryptoTools {
     whisperConfig:WhisperConfig=new WhisperConfig();
+    tokenSize=20;
     constructor() {}
     
     generateKeyPair() {
@@ -39,7 +40,7 @@ export class CryptoTools {
     }
 
     dohashMac(sharedSecret:Uint8Array, dataPub:Uint8Array) {
-       let mac= auth(dataPub, sharedSecret)
+       let mac= blake2b(dataPub, sharedSecret,this.tokenSize)
         return encode(mac);
     }
     generatePriority() {

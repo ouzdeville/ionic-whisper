@@ -7,6 +7,9 @@ export class WhisperConfig {
     /* organization code */
     organizationCode= 0x02;
 
+    /* MTU Size for sending data*/
+    mtuSize=20;
+
     /* location tracker parameters */
     enablePrivacyBox= false;
     locationUpdateDistance= 0.0;
