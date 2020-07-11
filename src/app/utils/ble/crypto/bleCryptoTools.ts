@@ -1,6 +1,6 @@
 import { WhisperConfig } from '../config';
 import { sharedKey, generateKeyPair } from 'curve25519-js';
-import { randomBytes, auth} from "tweetnacl-ts";
+import { randomBytes, auth,hash,decodeUTF8} from "tweetnacl-ts";
 import { decode,encode} from "base64-ts";
 import { Injectable } from '@angular/core';
 
@@ -11,28 +11,29 @@ export class CryptoTools {
     constructor() {}
     
     generateKeyPair() {
+
         const seed = randomBytes(32);
         let brutKeyPair = generateKeyPair(seed);
 
         let keyPair = {
-            pubKey: encode(brutKeyPair.public),
-            prvKey: encode(brutKeyPair.private)
+            public_key: encode(brutKeyPair.public),
+            private_key: encode(brutKeyPair.private)
         };
         return keyPair;
     }
 
     getInteraction(keyPair, peerPubKey) {
-        const myPriv = decode(keyPair.prvKey);
+        const myPriv = decode(keyPair.private_key);
 
         const hisPub = decode(peerPubKey);
 
         const sharedSecret = sharedKey(myPriv, hisPub);
         // Compute  tokens
-        let localToken = this.dohashMac(sharedSecret, keyPair.pubKey);
+        let localToken = this.dohashMac(sharedSecret, keyPair.public_key);
         let peerToken = this.dohashMac(sharedSecret, peerPubKey);
         let tokenPair = {
-            localToken: localToken,
-            peerToken: peerToken
+            tell_token: localToken,
+            hear_token: peerToken
         };
         return tokenPair;
     }
@@ -46,6 +47,10 @@ export class CryptoTools {
         buf[0] = this.whisperConfig.nodlePayloadTypeWhisper;
         
         return buf;
+    }
+
+    doHash(message:string){
+        return encode(hash(decodeUTF8(message)));
     }
 
 
