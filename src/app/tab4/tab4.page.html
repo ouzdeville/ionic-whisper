@@ -1,0 +1,25 @@
+<ion-header [translucent]="true">
+  <ion-toolbar>
+    <ion-title>
+      Debug-Mode: Pingd 
+    </ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true">
+  <ion-button   (click)="doRefresh()" color="success" shape="full" expand="block">
+    Push to Refresh
+   </ion-button>
+  <ion-list>
+    
+    <ion-item lines="inset" *ngFor="let ping of pings">
+      <ion-label>
+        <h5>Ping</h5>
+        <p>Id:{{ping.id}}</p>
+        <p>ping_timestamp_ms:{{ping.ping_timestamp_ms}}</p>
+        <p>rssi:{{ping.rssi}}</p>
+        <p>elapsed_time_duration:{{ping.elapsed_time_duration}}</p>
+        <p>TokenId:{{ping.private_encounter_token_id}}</p>
+      </ion-label>
+    </ion-item>
+  </ion-list>

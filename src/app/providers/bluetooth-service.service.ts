@@ -396,6 +396,7 @@ export class BluetoothServiceService {
       this.db.getLastConnect(this.cryptoTools.doHash(device.address)).then(lastConnect => {
         if (lastConnect != null) {
           mustThrottle = his_value.connect_time_ms < lastConnect.connect_time_ms + this.whisperConfig.mustReconnectAfterMillis;
+          console.log("mustThrottle :" + mustThrottle);
           if (mustThrottle) {
             this.db.addBlePingEvent(his_value.connect_time_ms, his_value.rssi,
               this.whisperConfig.pingMaxElapsedTimeMillis,

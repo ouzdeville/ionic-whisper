@@ -2,22 +2,22 @@ import { Component } from '@angular/core';
 import { DatabaseService } from '../service/database.service';
 
 @Component({
-  selector: 'app-tab2',
-  templateUrl: 'tab2.page.html',
-  styleUrls: ['tab2.page.scss']
+  selector: 'app-tab4',
+  templateUrl: 'tab4.page.html',
+  styleUrls: ['tab4.page.scss']
 })
-export class Tab2Page {
+export class Tab4Page {
 
-  tokens: any []= [];
+  pings: any []= [];
   constructor(private db: DatabaseService) {}
 
   ngOnInit() {
     this.db.getDatabaseState().subscribe((res) => {
       if (res) {
-        this.db.getPrivateEncounterTokens().subscribe(item => {
-          console.log("Tokens:" + JSON.stringify(item))
+        this.db.getPingEvents().subscribe(item => {
+          console.log("Pings:" + JSON.stringify(item))
           if (item != null)
-            this.tokens = item
+            this.pings = item
         })
         
       }
@@ -27,7 +27,7 @@ export class Tab2Page {
   
   doRefresh() {
     console.log("doRefresh");
-    this.db.getAllPrivateEncounterTokens();
+    this.db.getAllBlePingEvents();
   }
 
 }

@@ -17,7 +17,7 @@ export class Tab1Page {
     this.db.getDatabaseState().subscribe((res) => {
       if (res) {
         this.db.getUserKeyPairs().subscribe(item => {
-          console.log("Page1:" + JSON.stringify(item))
+          console.log("KeyPairs:" + JSON.stringify(item))
           if (item != null)
             this.keyPairs = item
         })

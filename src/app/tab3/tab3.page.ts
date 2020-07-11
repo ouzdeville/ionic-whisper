@@ -15,7 +15,7 @@ export class Tab3Page {
     this.db.getDatabaseState().subscribe((res) => {
       if (res) {
         this.db.getConnectEvents().subscribe(item => {
-          console.log("Page1:" + JSON.stringify(item))
+          console.log("Connectons:" + JSON.stringify(item))
           if (item != null)
             this.connects = item
         })
