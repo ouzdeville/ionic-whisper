@@ -1,17 +1,29 @@
 <ion-header [translucent]="true">
   <ion-toolbar>
     <ion-title>
-      Tab 1
+      Debug-Mode: My KeyPairs 
     </ion-title>
   </ion-toolbar>
 </ion-header>
 
 <ion-content [fullscreen]="true">
-  <ion-header collapse="condense">
-    <ion-toolbar>
-      <ion-title size="large">Touz</ion-title>
-    </ion-toolbar>
-  </ion-header>
+  <ion-button   (click)="doRefresh()" color="success" shape="full" expand="block">
+    Push to Refresh
+   </ion-button>
+  <ion-list>
+    
+    <ion-item lines="inset" *ngFor="let keyPair of keyPairs">
+      <ion-label>
+        <h5>Key Pair</h5>
+        <p>Id:{{keyPair.id}}</p>
+        <p>Priv:{{keyPair.private_key}}</p>
+        <p>Pub:{{keyPair.public_key}}</p>
+        <p>time_reference:{{keyPair.time_reference}}</p>
+        <p>expiry_after_sec:{{keyPair.expiry_after_sec}}</p>
+      </ion-label>
+    </ion-item>
+  </ion-list>
+  
 
   
 </ion-content>

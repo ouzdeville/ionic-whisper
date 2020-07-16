@@ -5,7 +5,7 @@ import { Injectable } from '@angular/core';
 export class WhisperConfig {
   constructor() {}
     /* organization code */
-    organizationCode= 0x01;
+    organizationCode= 0x02;
 
     /* location tracker parameters */
     enablePrivacyBox= false;
@@ -27,14 +27,16 @@ export class WhisperConfig {
     pingMaxElapsedTimeMillis= 5 * 60 * 1000; // 5 minutes
 
     /* GATT services and characteristics */
-    whisperServiceUUID= "1e91022a-4c2a-434d-be23-d39eb6cd4952";
-    whisperV1CharacteristicUUID= "4d5c8851-6210-425f-8ab9-df679779a3b4"; // EBID
-    whisperV3CharacteristicUUID= "645ed98f-d6b0-46b5-a1a5-ce32bbf09232"; // PET
+    //whisperServiceUUID= "1e91022a-4c2a-434d-be23-d39eb6cd4952";
+    //whisperV1CharacteristicUUID= "4d5c8851-6210-425f-8ab9-df679779a3b4"; // EBID
+    whisperV3CharacteristicUUID= "645ED98F-D6B0-46B5-A1A5-CE32BBF09232"; // PET
+    
 
 
     /*Advertising params*/
-    advAndroidparams= {
+    advParams= {
         "service":this.whisperV3CharacteristicUUID, //Android
+        "services":[this.whisperV3CharacteristicUUID], //iOS
         "name":"DaanCovid19",
         "manufacturerId":this.nodleBluetoothManufacturerId,
         "manufacturerSpecificData":'',//whisper priority for a specific advertising
@@ -45,24 +47,12 @@ export class WhisperConfig {
         "includeDeviceName":false,
         "includeTxPowerLevel":false
       };
-      advIOSparams= {
-        "services":[this.whisperV3CharacteristicUUID], //iOS
-        "name":"DaanCovid19",
-        "manufacturerId":this.nodleBluetoothManufacturerId,
-        "manufacturerSpecificData":'', //whisper priority for a specific advertising
-        "mode":"lowLatency",
-        "connectable":true,
-        "timeout":0,
-        "txPowerLevel":"high",
-        "includeDeviceName":false,
-        "includeTxPowerLevel":false
-      };
 
       serviceParam = {
-        service: this.whisperServiceUUID,
+        service: this.whisperV3CharacteristicUUID,
         characteristics: [
           {
-            uuid: "ABCD",
+            uuid: this.whisperV3CharacteristicUUID,
             permissions: {
               read: true,
               write: true,

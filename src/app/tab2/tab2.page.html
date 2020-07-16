@@ -1,17 +1,31 @@
 <ion-header [translucent]="true">
   <ion-toolbar>
     <ion-title>
-      Tab 2
+      Debug-Mode: Shared Tokens  
     </ion-title>
   </ion-toolbar>
 </ion-header>
 
 <ion-content [fullscreen]="true">
-  <ion-header collapse="condense">
-    <ion-toolbar>
-      <ion-title size="large">Tab 2</ion-title>
-    </ion-toolbar>
-  </ion-header>
+  <ion-button   (click)="doRefresh()" color="success" shape="full" expand="block">
+    Push to Refresh
+   </ion-button>
+  <ion-list>
+    
+    <ion-item lines="inset" *ngFor="let token of tokens">
+      <ion-label>
+        <h5>Token</h5>
+        <p>Id:{{token.id}}</p>
+        <p>Tell:{{token.tell_token}}</p>
+        <p>Hear:{{token.hear_token}}</p>
+        <p>geo_hash:{{token.geo_hash}}</p>
+        <p>last_seen:{{token.last_seen}}</p>
+        <p>shared:{{token.shared}}</p>
+        <p>tag:{{token.tag}}</p>
+      </ion-label>
+    </ion-item>
+  </ion-list>
+  
 
-  <app-explore-container name="Tab 2 page"></app-explore-container>
+  
 </ion-content>

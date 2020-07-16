@@ -1,5 +1,6 @@
 import { Component } from '@angular/core';
 import { PermissionBleService } from '../service/permission-ble.service';
+import { DatabaseService } from '../service/database.service';
 
 @Component({
   selector: 'app-tab1',
@@ -8,11 +9,32 @@ import { PermissionBleService } from '../service/permission-ble.service';
 })
 export class Tab1Page {
 
-  constructor(private permissionBleService: PermissionBleService) {}
+  keyPairs: any []= [];
+  constructor(private permissionBleService: PermissionBleService,
+    private db: DatabaseService) { }
+
+  ngOnInit() {
+    this.db.getDatabaseState().subscribe((res) => {
+      if (res) {
+        this.db.getUserKeyPairs().subscribe(item => {
+          console.log("Page1:" + JSON.stringify(item))
+          if (item != null)
+            this.keyPairs = item
+        })
+        
+      }
+    });
+  }
 
   gotoGeolocalisation() {
     this.permissionBleService.requestBluetoothPermission();
 
   }
+  doRefresh() {
+    console.log("doRefresh");
+    this.db.getAllUserKeyPairs();
+  }
+
+
 
 }

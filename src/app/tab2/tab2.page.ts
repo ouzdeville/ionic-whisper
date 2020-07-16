@@ -1,4 +1,5 @@
 import { Component } from '@angular/core';
+import { DatabaseService } from '../service/database.service';
 
 @Component({
   selector: 'app-tab2',
@@ -7,6 +8,26 @@ import { Component } from '@angular/core';
 })
 export class Tab2Page {
 
-  constructor() {}
+  tokens: any []= [];
+  constructor(private db: DatabaseService) {}
+
+  ngOnInit() {
+    this.db.getDatabaseState().subscribe((res) => {
+      if (res) {
+        this.db.getPrivateEncounterTokens().subscribe(item => {
+          console.log("Page1:" + JSON.stringify(item))
+          if (item != null)
+            this.tokens = item
+        })
+        
+      }
+    });
+  }
+
+  
+  doRefresh() {
+    console.log("doRefresh");
+    this.db.getAllPrivateEncounterTokens();
+  }
 
 }
