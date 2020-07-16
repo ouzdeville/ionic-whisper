@@ -18,6 +18,15 @@ export class PermissionBleService {
 
       if(this.platform.is('android')) {
         this.bluetoothLe.requestPermission().then(result => {
+          this.androidPermission.checkPermission(this.androidPermission.PERMISSION.BLUETOOTH).then(
+              result => console.log('Has permission?',result.hasPermission),
+              err => this.androidPermission.requestPermission(this.androidPermission.PERMISSION.BLUETOOTH)
+          );
+          this.androidPermission.checkPermission(this.androidPermission.PERMISSION.BLUETOOTH_ADMIN).then(
+              result => console.log('Has permission?',result.hasPermission),
+              err => this.androidPermission.requestPermission(this.androidPermission.PERMISSION.BLUETOOTH_ADMIN)
+          );
+
           console.log('[PermissionService] bluetooth has been enabled: ' + JSON.stringify(result));
           resolve(true);
         })
