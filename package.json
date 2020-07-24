@@ -26,6 +26,7 @@
     "@ionic-native/core": "^5.0.7",
     "@ionic-native/diagnostic": "^5.27.0",
     "@ionic-native/local-notifications": "^5.27.0",
+    "@ionic-native/native-audio": "^5.27.0",
     "@ionic-native/splash-screen": "^5.0.0",
     "@ionic-native/sqlite": "^5.27.0",
     "@ionic-native/sqlite-porter": "^5.27.0",
@@ -39,6 +40,7 @@
     "cordova-plugin-bluetoothle": "^4.5.14",
     "cordova-plugin-device": "^2.0.3",
     "cordova-plugin-local-notification": "^0.9.0-beta.2",
+    "cordova-plugin-nativeaudio": "^3.0.9",
     "cordova-sqlite-storage": "^5.0.0",
     "cordova.plugins.diagnostic": "^5.0.2",
     "curve25519-js": "0.0.4",
@@ -95,7 +97,8 @@
       },
       "cordova-plugin-ionic-keyboard": {},
       "cordova-sqlite-storage": {},
-      "uk.co.workingedge.cordova.plugin.sqliteporter": {}
+      "uk.co.workingedge.cordova.plugin.sqliteporter": {},
+      "cordova-plugin-nativeaudio": {}
     },
     "platforms": [
       "android"

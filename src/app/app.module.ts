@@ -16,6 +16,7 @@ import { AndroidPermissions } from '@ionic-native/android-permissions/ngx';
 import { SQLitePorter } from '@ionic-native/sqlite-porter/ngx';
 import { SQLite } from '@ionic-native/sqlite/ngx';
 import { HttpClientModule } from '@angular/common/http';
+import { NativeAudio } from '@ionic-native/native-audio/ngx';
 
 @NgModule({
   declarations: [AppComponent],
@@ -31,7 +32,8 @@ import { HttpClientModule } from '@angular/common/http';
     { provide: RouteReuseStrategy, useClass: IonicRouteStrategy },
     AndroidPermissions,
     SQLite,
-    SQLitePorter
+    SQLitePorter,
+    NativeAudio
   ],
   bootstrap: [AppComponent]
 })

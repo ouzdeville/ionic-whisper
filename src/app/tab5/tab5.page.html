@@ -1,0 +1,25 @@
+<ion-header [translucent]="true">
+  <ion-toolbar>
+    <ion-title>
+      Lim thi wolof
+    </ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true">
+
+  
+  
+
+   <form (ngSubmit)="playAudio()">
+    <ion-item>
+      <ion-label>Your Number</ion-label>
+      <ion-input type="number" [(ngModel)]="number" name="number" placeholder="Enter Input"></ion-input>
+    </ion-item>
+    <ion-button type="submit"  color="success" shape="full" expand="block">
+      Lim thi wolof
+     </ion-button>
+</form>
+
+   </ion-content>
+  
