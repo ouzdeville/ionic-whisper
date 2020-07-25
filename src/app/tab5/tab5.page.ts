@@ -75,6 +75,12 @@ export class Tab5Page {
       this.nativeAudio.preloadComplex('ak', this.audioPath + 'ak.m4a', 1, 1, 0).then(function () {
       }, function (err) { console.log("audio failed: " + err); });
 
+      this.nativeAudio.preloadComplex('___', this.audioPath + 'off.m4a', 1, 1, 2000).then(function () {
+      }, function (err) { console.log("audio failed: " + err); });
+
+      this.nativeAudio.preloadComplex('__', this.audioPath + 'off.m4a', 1, 1, 1000).then(function () {
+      }, function (err) { console.log("audio failed: " + err); });
+
 
     });
 

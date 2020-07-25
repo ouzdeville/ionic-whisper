@@ -46,9 +46,9 @@ export class NumberToWord {
                 // Build the string to add as a prefix
                 let prefix: string = "";
                 if (groupText[i] === "1")
-                    prefix = this.scales[i + 1];
+                    prefix = this.scales[i + 1]+" "+"___";
                 else
-                    prefix = groupText[i] + " " + this.scales[i + 1];
+                    prefix = groupText[i] + " " + this.scales[i + 1]+" "+"___";
 
                 if (combinaison.length != 0)
                     prefix += " ak ";
