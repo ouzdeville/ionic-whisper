@@ -301,7 +301,7 @@ export class BluetoothServiceService {
   // /**
   //  *
   //  * @param result
-  //  * status => enabled = Bluetooth is enabled
+  //  * status => enabled = donc on peut ajouter nos services avec addService
   //  * status => disabled = Bluetooth is disabled
   //  * status => readRequested = Respond to a read request with respond(). Characteristic (Android/iOS) or Descriptor (Android)
   //  * status => writeRequested = Respond to a write request with respond(). Characteristic (Android/iOS) or Descriptor (Android)
