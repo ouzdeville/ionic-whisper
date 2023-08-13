@@ -58,6 +58,7 @@ export class BluetoothServiceService {
   };
   /*
   Central Life Cycle
+  Central - le périphérique BLE qui initie une demande de connexion sortante vers un périphérique publicitaire (Téléphone)
   1- initialize
   2- scan (if device address is unknown)
   3- connect
@@ -69,6 +70,7 @@ export class BluetoothServiceService {
 
   /*
   Peripheral Life Cycle
+  Périphérique - l'appareil BLE qui accepte une demande de connexion entrante après la publicité (notre ESP)
   1- initializePeripheral
   2- addService
   3- startAdvertising
