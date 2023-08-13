@@ -56,7 +56,27 @@ export class BluetoothServiceService {
     PROCESS_KEYS_START: (0x02),
     PROCESS_KEYS_STOP: (0x03)
   };
+  /*
+  Central Life Cycle
+  1- initialize
+  2- scan (if device address is unknown)
+  3- connect
+  4- discover OR services/characteristics/descriptors (iOS)
+  5- read/subscribe/write characteristics AND read/write descriptors
+  6- disconnect
+  7- close
+  */
 
+  /*
+  Peripheral Life Cycle
+  1- initializePeripheral
+  2- addService
+  3- startAdvertising
+  4- Listen for events on initializePeripheral callback
+  5- Respond to events using respond or notify
+  6- stopAdvertising
+  7- removeService / removeAllServices
+  */
 
   constructor(public navCtrl: NavController,
     private toastCtrl: ToastController,
@@ -96,16 +116,19 @@ export class BluetoothServiceService {
           this.advParams = this.whisperConfig.advIOSparams;
         }*/
         /**
-        request = true / false (par défaut) - L'utilisateur doit-il être invité à activer Bluetooth
-        statusReceiver = true / false (par défaut) - Les notifications de changement d'état Bluetooth doivent-elles être envoyées.
-        restoreKey = Une chaîne unique pour identifier votre application. Le mode d'arrière-plan Bluetooth Central est requis pour l'utiliser, mais le mode d'arrière-plan ne semble pas nécessiter de spécifier le restoreKey.
+        Initialisez Bluetooth sur l'appareil. Doit être appelé avant toute autre chose. Le rappel sera utilisé en permanence chaque fois que Bluetooth est activé ou désactivé
+        * request = true / false (par défaut) - L'utilisateur doit-il être invité à activer Bluetooth
+        * statusReceiver = true / false (par défaut) - Les notifications de changement d'état Bluetooth doivent-elles être envoyées.
+        * restoreKey = Une chaîne unique pour identifier votre application. Le mode d'arrière-plan Bluetooth Central est requis pour l'utiliser, mais le mode d'arrière-plan ne semble pas nécessiter de spécifier le restoreKey.
         */
         this.bluetoothle.initialize({ "request": true, "statusReceiver": false, "restoreKey": "bluetoothleplugin" }).subscribe(result => {
           //status => enabled = Bluetooth is enabled
           //status => disabled = Bluetooth is disabled
           console.log('#BLE-initialize' + JSON.stringify(result)) // logs 'enabled'
         });
+        
         //init Gatt Server
+        //On Android, you must always call initialize() before calling initializePeripheral().
         this.bluetoothle.initializePeripheral({ "request": true, "restoreKey": "bluetoothleplugin" }).subscribe(result => {
           console.log('#BLE-initializedPeripheral', + JSON.stringify(result));
           this.initializeResult(result);
