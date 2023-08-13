@@ -95,7 +95,14 @@ export class BluetoothServiceService {
         if (this.platform.is('ios')) {
           this.advParams = this.whisperConfig.advIOSparams;
         }*/
+        /**
+        request = true / false (par défaut) - L'utilisateur doit-il être invité à activer Bluetooth
+        statusReceiver = true / false (par défaut) - Les notifications de changement d'état Bluetooth doivent-elles être envoyées.
+        restoreKey = Une chaîne unique pour identifier votre application. Le mode d'arrière-plan Bluetooth Central est requis pour l'utiliser, mais le mode d'arrière-plan ne semble pas nécessiter de spécifier le restoreKey.
+        */
         this.bluetoothle.initialize({ "request": true, "statusReceiver": false, "restoreKey": "bluetoothleplugin" }).subscribe(result => {
+          //status => enabled = Bluetooth is enabled
+          //status => disabled = Bluetooth is disabled
           console.log('#BLE-initialize' + JSON.stringify(result)) // logs 'enabled'
         });
         //init Gatt Server
